@@ -9,13 +9,12 @@ from os import system
 def draw_features(image, face_landmarks_list, fname=None, invert=False,
                   linewidth=2, facial_features=None):
     """
-
+    Draws facial features on image
     Parameters
     ----------
     image: np.array(:, :, 3)
         RGB
-    face_landmarks_list:
-
+    face_landmarks_list: list(dict(feature:np.array())))
     fname: str or None
         If specified, save to this path
     invert: bool
@@ -26,7 +25,7 @@ def draw_features(image, face_landmarks_list, fname=None, invert=False,
 
     Returns
     -------
-
+    If no filename is given, returns np.array(:, :, 3) image
     """
     if facial_features is None:
         facial_features = [
