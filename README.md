@@ -24,3 +24,7 @@ detect_faces_video('video_in.mp4', 'video_out.avi')
 OpenCV is pretty picky about the form of the input video, so you may 
 have to use `ffmpeg` to change the video codec.
 
+## Ideas
+* use mixture of median filter and gaussian filter on points to improve tracking
+* Sometimes a second face appears in subject's clothing. Figure out how to remove this.
+* Implement in C++
