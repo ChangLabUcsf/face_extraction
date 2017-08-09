@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 from os import system
+from scipy.signal import medfilt
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 def draw_features(image, face_landmarks_list, fname=None, invert=False,
@@ -48,7 +50,8 @@ def draw_features(image, face_landmarks_list, fname=None, invert=False,
 
     for face_landmarks in face_landmarks_list:
         for facial_feature in facial_features:
-            d.line(face_landmarks[facial_feature], width=linewidth)
+            if np.isfinite(np.all(np.array(face_landmarks[facial_feature]))):
+                d.line(face_landmarks[facial_feature], width=linewidth)
 
     if fname is None:
         return pil_image
@@ -115,3 +118,71 @@ def detect_faces_video(video_file, output_file=None, fps=None,
         system('rm temp.avi')
 
     return all_features
+
+
+def draw_features_on_video(video_file, output_file, all_features,
+                           frame_count=None):
+    """
+    Draw pre-computed features on video. Allows you to process filters in
+    between acquisition and plotting.
+
+    Parameters
+    ----------
+    video_file: str
+    output_file: str
+    all_features:
+    frame_count: (optional) int
+
+
+    """
+    video_capture = cv2.VideoCapture(video_file)
+    dimensions = (int(video_capture.get(3)), int(video_capture.get(4)))
+    fps = video_capture.get(cv2.CAP_PROP_FPS)
+
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    out = cv2.VideoWriter('temp.avi', fourcc, fps, dimensions)
+    iframe = 0
+    for face_landmarks_list in tqdm(all_features):
+        iframe += 1
+        if not (frame_count and (iframe > frame_count)):
+            success, frame = video_capture.read()
+            frame2 = draw_features(frame, face_landmarks_list)
+            out.write(np.array(frame2))
+    out.release()
+    system(
+        'ffmpeg -i temp.avi -i {} -vcodec h264 -map 0:0 -map 1:1 -shortest {} -y'
+        .format(video_file, output_file))
+    system('rm temp.avi')
+
+
+def combine_feature_data(data):
+    data2 = {key: [] for key in data[0][0]}
+    for t in data:
+        if t:
+            f = t[0]
+            for key in f:
+                data2[key].append(f[key])
+        else:
+            for key in f:
+                data2[key].append([(np.nan, np.nan)] * len(data2[key][-1]))
+
+    data2 = {key: np.array(data2[key]) for key in data2}
+
+    return data2
+
+
+def filter_features(data2, median_win=5, gaussian_std=1):
+    for key in data2:
+        data = medfilt(data2[key], [median_win, 1, 1])
+        data2[key] = gaussian_filter1d(data, gaussian_std, axis=0,
+                                       mode='nearest')
+
+    return data2
+
+
+def uncombine_feature_data(data2):
+    data3 = []
+    for i in range(len(data2['bottom_lip'])):
+        data3.append([{key: [tuple(x) for x in data2[key][i]]
+                       for key in data2}])
+    return data3
