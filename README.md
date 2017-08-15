@@ -3,7 +3,7 @@
 
 ## Installation
 I recommend using a conda envoronment.
-`ffmpeg` is required. If on mac, install by running `brew install ffmpeg`. 
+`ffmpeg` and `dlib` are required. If on mac, install by running `brew install ffmpeg`. 
 It also uses `opencv3`, which can be installed using `conda install opencv3`, 
 however I was only able to get this to work in python 3.5, so I used conda 
 virtual environment. Putting it all together (assuming anaconda is properly
