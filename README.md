@@ -4,7 +4,7 @@
 ## Installation
 I recommend using a conda envoronment.
 `ffmpeg` and `dlib` are required. If on mac, install `ffmpeg` by running `brew install ffmpeg`. 
-It also uses `opencv3`, which can be installed using `conda install opencv3`, 
+Installing `dlib` on a mac is a bit of an ordeal. [This post](http://www.pyimagesearch.com/2017/03/27/how-to-install-dlib/) should help. It also uses `opencv3`, which can be installed using `conda install opencv3`, 
 however I was only able to get this to work in python 3.5, so I used conda 
 virtual environment. Putting it all together (assuming anaconda is properly
 installed):
