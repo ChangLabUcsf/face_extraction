@@ -65,7 +65,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['face_recognition', 'opencv3', 'matplotlib','Pillow','tqdm','numpy'],
+    install_requires=['face_recognition','pillow','tqdm','numpy'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
