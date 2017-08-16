@@ -1,5 +1,6 @@
 # face extraction
 
+Installed on `pia` inside `/userdata/bdichter/envs/py35`
 
 ## Installation
 I recommend using a conda envoronment.
