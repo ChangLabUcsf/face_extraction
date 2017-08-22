@@ -6,6 +6,7 @@ from tqdm import tqdm
 from os import system
 from scipy.signal import medfilt
 from scipy.ndimage.filters import gaussian_filter1d
+import pickle
 
 
 def draw_features(image, face_landmarks_list, fname=None, invert=False,
@@ -59,8 +60,9 @@ def draw_features(image, face_landmarks_list, fname=None, invert=False,
     pil_image.save(fname)
 
 
-def detect_faces_video(video_file, output_file=None, fps=None,
-                       dimensions=None, frame_count=None):
+def detect_faces_video(video_file, output_video_file=None, fps=None,
+                       dimensions=None, frame_count=None,
+                       output_data_file=None):
     """
     Detect faces and draw them on video. Return features through time.
 
@@ -102,11 +104,11 @@ def detect_faces_video(video_file, output_file=None, fps=None,
         face_landmarks_list = face_recognition.face_landmarks(frame)
         all_features.append(face_landmarks_list)
 
-        if output_file:
+        if output_video_file:
             frame2 = draw_features(frame, face_landmarks_list)
             out.write(np.array(frame2))
 
-    if output_file:
+    if output_video_file:
         out.release()
         """
         * encoding with h264 makes the video about 1/20th the size
@@ -114,9 +116,12 @@ def detect_faces_video(video_file, output_file=None, fps=None,
         * the `map` arguments take the audio from the original video file
         """
         system('ffmpeg -i temp.avi -i {} -vcodec h264 -map 0:0 -map 1:1 -shortest {}'
-               .format(video_file, output_file))
+               .format(video_file, output_video_file))
         system('rm temp.avi')
-
+        
+    if output_data_file:
+        pickle.dump(all_features, open(output_data_file, 'bw'))
+        
     return all_features
 
 
