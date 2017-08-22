@@ -92,7 +92,7 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
     if dimensions is None:
         dimensions = (int(video_capture.get(3)), int(video_capture.get(4)))
 
-    if output_file:
+    if output_video_file:
         if fps is None:
             fps = video_capture.get(cv2.CAP_PROP_FPS)
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
