@@ -11,7 +11,7 @@ virtual environment. Putting it all together (assuming anaconda is properly
 installed):
 ```bash
 brew install ffmpeg
-conda create -n face_extraction_env python=35 opencv3 pillow numpy
+conda create -n face_extraction_env python=3.5 opencv3 pillow numpy
 source activate face_extraction_env
 pip install tqdm
 pip install face_recognition
