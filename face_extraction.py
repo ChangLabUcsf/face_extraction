@@ -101,6 +101,8 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
     all_features = []
     for _ in tqdm(range(frame_count)):
         success, frame = video_capture.read()
+        if not success:
+            raise Exception('video cannot be read')
         face_landmarks_list = face_recognition.face_landmarks(frame)
         all_features.append(face_landmarks_list)
 
