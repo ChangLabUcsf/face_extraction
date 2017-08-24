@@ -61,8 +61,7 @@ def draw_features(image, face_landmarks_list, fname=None, invert=False,
 
 
 def detect_faces_video(video_file, output_video_file=None, fps=None,
-                       dimensions=None, frame_count=None,
-                       output_data_file=None):
+                       dimensions=None, output_data_file=None, save_n=1000):
     """
     Detect faces and draw them on video. Return features through time.
 
@@ -74,8 +73,8 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
         default: take from input file
     dimensions: tuple or None
         default: take from input file
-    frame_count: int or None
-        Only take the first `frame_count` frames. If None, use all frames.
+    save_n: int or None
+        If not None, save every n frames (Default = 1000)
 
     Returns
     -------
@@ -86,9 +85,11 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
         )
 
     """
+
+    # TODO: if vcodec is not mp4, use ffmpeg to convert video
+    # TODO: split and recombine video
     video_capture = cv2.VideoCapture(video_file)
-    if frame_count is None:
-        frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
     if dimensions is None:
         dimensions = (int(video_capture.get(3)), int(video_capture.get(4)))
 
@@ -99,12 +100,17 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
         out = cv2.VideoWriter('temp.avi', fourcc, fps, dimensions)
 
     all_features = []
+    counter = 0
     for _ in tqdm(range(frame_count)):
+        counter += 1
         success, frame = video_capture.read()
         if not success:
             raise Exception('video cannot be read')
         face_landmarks_list = face_recognition.face_landmarks(frame)
         all_features.append(face_landmarks_list)
+        if save_n and not (counter % save_n) and output_data_file:
+            pickle.dump(all_features, open(
+                output_data_file + '_' + str(counter), 'bw'))
 
         if output_video_file:
             frame2 = draw_features(frame, face_landmarks_list)
