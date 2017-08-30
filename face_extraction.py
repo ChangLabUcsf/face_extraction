@@ -3,10 +3,14 @@ import face_recognition
 import cv2
 import numpy as np
 from tqdm import tqdm
+import os
 from os import system
 from scipy.signal import medfilt
 from scipy.ndimage.filters import gaussian_filter1d
 import pickle
+import subprocess
+from multiprocessing import Pool
+
 
 
 def draw_features(image, face_landmarks_list, fname=None, invert=False,
@@ -60,6 +64,17 @@ def draw_features(image, face_landmarks_list, fname=None, invert=False,
     pil_image.save(fname)
 
 
+def detect_faces_video_chunked(video_file, chunks=5):
+    converted_fname = video_file[:-4]+'_mpeg4'+video_file[-4:]
+    video_file = convert_vcodec(video_file, converted_fname)
+
+    output_paths = split_video_n(video_file, chunks)
+
+    with Pool(chunks) as p:
+        results = p.map(detect_faces_video, output_paths)
+    return results
+
+
 def detect_faces_video(video_file, output_video_file=None, fps=None,
                        dimensions=None, output_data_file=None, save_n=1000):
     """
@@ -86,8 +101,9 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
 
     """
 
-    # TODO: if vcodec is not mp4, use ffmpeg to convert video
-    # TODO: split and recombine video
+    converted_fname = video_file[:-4]+'_mpeg4'+video_file[-4:]
+    video_file = convert_vcodec(video_file, converted_fname)
+
     video_capture = cv2.VideoCapture(video_file)
     frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
     if dimensions is None:
@@ -126,10 +142,10 @@ def detect_faces_video(video_file, output_video_file=None, fps=None,
         system('ffmpeg -i temp.avi -i {} -vcodec h264 -map 0:0 -map 1:1 -shortest {}'
                .format(video_file, output_video_file))
         system('rm temp.avi')
-        
+
     if output_data_file:
         pickle.dump(all_features, open(output_data_file, 'bw'))
-        
+
     return all_features
 
 
@@ -199,3 +215,63 @@ def uncombine_feature_data(data2):
         data3.append([{key: [tuple(x) for x in data2[key][i]]
                        for key in data2}])
     return data3
+
+
+def split_video_n(input_fname, n=2, output_fname=None):
+    duration = get_video_duration(input_fname)
+    chunk_duration = duration / n
+    return split_video_time(input_fname, chunk_duration, output_fname=output_fname)
+
+
+def split_video_time(input_fname, chunk_duration=600, output_fname=None):
+    """
+    split video into time segments. Default = 10 minute chunks
+    """
+    if output_fname is None:
+        output_fname = input_fname
+
+    dest_dir = os.path.join(os.path.split(input_fname)[0], 'temp')
+    os.makedirs(dest_dir, exist_ok=True)
+
+    duration = get_video_duration(input_fname)
+    output_paths = []
+    for i, start in enumerate(np.arange(0, duration, chunk_duration)):
+        if start + chunk_duration <= duration:
+            this_chunk_duration = chunk_duration
+            t_arg = '-t'
+        else:
+            this_chunk_duration = ''
+            t_arg = ''
+        this_output_fname =  '{}_p{}{}'.format(output_fname[:-4], i,
+        output_fname[-4:])
+        this_output_path = os.path.join(dest_dir, this_output_fname)
+        output_paths.append(this_output_path)
+        os.system('ffmpeg -i "{}" -ss {} {} {} -c copy "{}"'
+        .format(input_fname, start, t_arg, this_chunk_duration, this_output_path))
+
+    return output_paths
+
+
+def get_video_duration(input_fname):
+    """
+    return duration of video in seconds
+    """
+    result = subprocess.check_output('ffprobe -v error -show_entries format=duration \
+-of default=noprint_wrappers=1:nokey=1 "{}"'.format(input_fname), shell=True)
+    return float(result.strip())
+
+
+def convert_vcodec(input_fname, output_filename, vcodec='mpeg4'):
+    if check_vcodec(input_fname).decode() == vcodec:
+        return input_fname
+    print('converting to mpeg4')
+    os.system('ffmpeg -i "{}" -vcodec {} "{}"'.format(input_fname, vcodec,
+              output_filename))
+    print('conversion complete.')
+    return output_filename
+
+
+def check_vcodec(input_fname):
+    result = subprocess.check_output('ffprobe -v error -select_streams v:0 -show_entries stream=codec_name \
+                                     -of default=noprint_wrappers=1:nokey=1 "{}"'.format(input_fname), shell=True)
+    return result.strip()
